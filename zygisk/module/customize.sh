@@ -56,13 +56,10 @@ extract() {
 VERSION=$(grep_prop version "${TMPDIR}/module.prop")
 ui_print "- Vector version ${VERSION}"
 
-# Disable existing LSPosed installation
+# Refuse an active competing framework without changing another module.
 LSPOSED_DIR="/data/adb/modules/zygisk_lsposed"
-if [ -d "$LSPOSED_DIR" ]; then
-    ui_print "*********************************************************"
-    ui_print "LSPosed installation detected, disabling it for Vector"
-    touch "$LSPOSED_DIR/disable"
-    ui_print "*********************************************************"
+if [ -d "$LSPOSED_DIR" ] && [ ! -f "$LSPOSED_DIR/disable" ]; then
+    abort "! Active LSPosed installation detected; resolve this conflict before installing Vector"
 fi
 
 # 1. Map architecture to standard ABI paths, eliminating duplicate logic
@@ -82,7 +79,7 @@ esac
 ui_print "- Device platform: $ARCH ($ABI32 / $ABI64)"
 
 ui_print "- Extracting root module files"
-for file in module.prop action.sh service.sh uninstall.sh sepolicy.rule framework/vector.dex cli daemon.apk daemon manager.apk; do
+for file in module.prop action.sh service.sh emulated-soft-reboot.sh post-fs-data.sh uninstall.sh sepolicy.rule framework/vector.dex cli daemon.apk daemon manager.apk; do
     extract "$ZIPFILE" "$file" "$MODPATH"
 done
 

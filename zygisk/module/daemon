@@ -32,9 +32,9 @@ fi
 # kernel-global anonymous device minors, whose gaps are visible from any process on the device.
 # Note that this script runs inside an isolated mount namespace (via unshare).
 emptyDir="$dir/.resource-cache"
-rm -rf "$emptyDir"
-mkdir -p "$emptyDir"
-mount -o bind "$emptyDir" /data/resource-cache
+rm -rf "$emptyDir" || exit 1
+mkdir -p "$emptyDir" || exit 1
+mount -o bind "$emptyDir" /data/resource-cache || exit 1
 
 # Wait for Zygote socket using a polling loop
 if [ ! -S "/dev/socket/zygote" ]; then

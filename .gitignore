@@ -11,3 +11,5 @@
 build
 /captures
 bin/
+/references/
+/artifacts/
