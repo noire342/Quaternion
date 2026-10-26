@@ -13,3 +13,5 @@ build
 bin/
 /references/
 /artifacts/
+__pycache__/
+*.pyc

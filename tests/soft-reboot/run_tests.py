@@ -379,7 +379,7 @@ int main(int argc, char **argv) {
         self.assert_ok(result)
         self.assertEqual(p.wait(timeout=2), -9)
         args, compiler = json.loads(result_path.read_text())
-        self.assertEqual(args, ['--system-server-max-retry=3', '--late-inject', 'argument with spaces'])
+        self.assertEqual(args, ['--system-server-max-retry=0', '--late-inject', 'argument with spaces'])
         self.assertTrue(compiler.startswith('stock compiler'))
 
     def test_first_update_cleans_before_new_zygote_namespace(self):
@@ -431,6 +431,29 @@ int main(int argc, char **argv) {
         self.assertEqual(result.returncode, 1)
         self.assertIn('old daemon did not exit', result.stderr)
         self.assertIsNone(p.poll())
+
+    def test_launcher_does_not_start_without_private_cache_mount(self):
+        source = (ROOT / 'zygisk/module/daemon').read_text()
+        marker = self.case / 'unexpected-app-process'
+        app_process = self.case / 'app-process-marker'
+        app_process.write_text('#!/bin/sh\ntouch ' + str(marker) + '\n')
+        app_process.chmod(0o755)
+        source = source.replace('@DEBUG@', 'false')
+        source = source.replace('/data/resource-cache', str(self.cache))
+        source = source.replace('/data/local/tmp/daemon.apk', str(self.case / 'unused.apk'))
+        source = source.replace('/system/bin/app_process', str(app_process))
+        daemon = self.module / 'daemon'
+        daemon.write_text(source)
+        tools = self.case / 'tools'
+        tools.mkdir()
+        mount = tools / 'mount'
+        mount.write_text('#!/bin/sh\nexit 1\n')
+        mount.chmod(0o755)
+        self.env['PATH'] = str(tools) + ':' + os.environ['PATH']
+        result = subprocess.run([self.shell, str(daemon)], env=self.env,
+                                text=True, capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 1)
+        self.assertFalse(marker.exists())
 
 
 if __name__ == '__main__':

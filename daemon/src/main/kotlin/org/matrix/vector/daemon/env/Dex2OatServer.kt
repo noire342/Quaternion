@@ -14,8 +14,8 @@ import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 import kotlinx.coroutines.launch
-import org.matrix.vector.ipc.IManagerService
 import org.matrix.vector.daemon.VectorDaemon
+import org.matrix.vector.ipc.IManagerService
 
 private const val TAG = "VectorDex2Oat"
 
@@ -45,7 +45,7 @@ object Dex2OatServer {
       r32: String?,
       d32: String?,
       r64: String?,
-      d64: String?
+      d64: String?,
   )
 
   private external fun setSockCreateContext(context: String?): Boolean
@@ -69,7 +69,8 @@ object Dex2OatServer {
           listOf(
               object : FileObserver(SELINUX_NODES.map(::File), FileObserver.CLOSE_WRITE) {
                 override fun onEvent(event: Int, path: String?) = onSelinuxEvent()
-              })
+              }
+          )
         } else {
           SELINUX_NODES.map { node ->
             @Suppress("DEPRECATION")
@@ -91,13 +92,12 @@ object Dex2OatServer {
         return
       }
 
-      val enforcing =
-          runCatching {
-                Files.newInputStream(Paths.get("/sys/fs/selinux/enforce")).use {
-                  it.read() == '1'.code
-                }
-              }
-              .getOrDefault(false)
+      val enforcing = runCatching {
+        Files.newInputStream(Paths.get("/sys/fs/selinux/enforce")).use {
+          it.read() == '1'.code
+        }
+      }
+          .getOrDefault(false)
 
       when {
         !enforcing -> {
@@ -142,9 +142,17 @@ object Dex2OatServer {
 
   private fun hasSePolicyErrors(): Boolean {
     return SELinux.checkSELinuxAccess(
-        "u:r:untrusted_app:s0", "u:object_r:dex2oat_exec:s0", "file", "execute") ||
+        "u:r:untrusted_app:s0",
+        "u:object_r:dex2oat_exec:s0",
+        "file",
+        "execute",
+    ) ||
         SELinux.checkSELinuxAccess(
-            "u:r:untrusted_app:s0", "u:object_r:dex2oat_exec:s0", "file", "execute_no_trans")
+            "u:r:untrusted_app:s0",
+            "u:object_r:dex2oat_exec:s0",
+            "file",
+            "execute_no_trans",
+        )
   }
 
   private fun openDex2oat(id: Int, path: String) {
@@ -159,46 +167,48 @@ object Dex2OatServer {
     if (!file.exists()) return
 
     runCatching {
-          FileInputStream(file).use { fis ->
-            val header = ByteArray(5)
-            if (fis.read(header) != 5) return
-            // Verify ELF Magic: 0x7F 'E' 'L' 'F'
-            if (header[0] != 0x7F.toByte() ||
+      FileInputStream(file).use { fis ->
+        val header = ByteArray(5)
+        if (fis.read(header) != 5) return
+        // Verify ELF Magic: 0x7F 'E' 'L' 'F'
+        if (
+            header[0] != 0x7F.toByte() ||
                 header[1] != 'E'.code.toByte() ||
                 header[2] != 'L'.code.toByte() ||
-                header[3] != 'F'.code.toByte())
-                return
+                header[3] != 'F'.code.toByte()
+        )
+            return
 
-            val is32Bit = header[4] == 1.toByte()
-            val is64Bit = header[4] == 2.toByte()
-            val isDebug = path.contains("dex2oatd")
+        val is32Bit = header[4] == 1.toByte()
+        val is64Bit = header[4] == 2.toByte()
+        val isDebug = path.contains("dex2oatd")
 
-            val index =
-                when {
-                  is32Bit -> if (isDebug) 1 else 0
-                  is64Bit -> if (isDebug) 3 else 2
-                  else -> -1
-                }
-
-            if (index != -1 && dex2oatArray[index] == null) {
-              dex2oatArray[index] = path
-              val fd = Os.open(path, OsConstants.O_RDONLY, 0)
-              try {
-                // A restarted daemon can inherit the previous daemon's bind mounts. Validate
-                // the opened FD, not just the path, before treating it as the stock compiler.
-                val candidate = Os.fstat(fd)
-                val wrapper = Os.stat(if (is32Bit) WRAPPER32 else WRAPPER64)
-                check(candidate.st_dev != wrapper.st_dev || candidate.st_ino != wrapper.st_ino) {
-                  "Refusing wrapper as stock compiler: $path"
-                }
-                fdArray[index] = fd
-              } finally {
-                if (fdArray[index] !== fd) Os.close(fd)
-              }
-              Log.i(TAG, "Detected $path -> Assigned Index $index")
+        val index =
+            when {
+              is32Bit -> if (isDebug) 1 else 0
+              is64Bit -> if (isDebug) 3 else 2
+              else -> -1
             }
+
+        if (index != -1 && dex2oatArray[index] == null) {
+          dex2oatArray[index] = path
+          val fd = Os.open(path, OsConstants.O_RDONLY, 0)
+          try {
+            // A restarted daemon can inherit the previous daemon's bind mounts. Validate
+            // the opened FD, not just the path, before treating it as the stock compiler.
+            val candidate = Os.fstat(fd)
+            val wrapper = Os.stat(if (is32Bit) WRAPPER32 else WRAPPER64)
+            check(candidate.st_dev != wrapper.st_dev || candidate.st_ino != wrapper.st_ino) {
+              "Refusing wrapper as stock compiler: $path"
+            }
+            fdArray[index] = fd
+          } finally {
+            if (fdArray[index] !== fd) Os.close(fd)
           }
+          Log.i(TAG, "Detected $path -> Assigned Index $index")
         }
+      }
+    }
         .onFailure {
           compilerOpenFailed = true
           Log.e(TAG, "Cannot open stock compiler $path", it)
@@ -276,28 +286,28 @@ object Dex2OatServer {
     SELinux.setFileContext(HOOKER64, xposedFile)
 
     runCatching {
-          // Closed by hand rather than with `use`: LocalServerSocket only implements Closeable
-          // from API 28, and this daemon runs from 27. The client socket below has implemented it
-          // since 17, so that one keeps `use`.
-          val server = LocalServerSocket(sockPath)
-          try {
-            setSockCreateContext(null)
-            while (true) {
-              // This blocks until the C++ wrapper connects
-              server.accept().use { client ->
-                val input = client.inputStream
-                val output = client.outputStream
-                val id = input.read()
-                if (id in fdArray.indices && fdArray[id] != null) {
-                  client.setFileDescriptorsForSend(arrayOf(fdArray[id]!!))
-                  output.write(1)
-                }
-              }
+      // Closed by hand rather than with `use`: LocalServerSocket only implements Closeable
+      // from API 28, and this daemon runs from 27. The client socket below has implemented it
+      // since 17, so that one keeps `use`.
+      val server = LocalServerSocket(sockPath)
+      try {
+        setSockCreateContext(null)
+        while (true) {
+          // This blocks until the C++ wrapper connects
+          server.accept().use { client ->
+            val input = client.inputStream
+            val output = client.outputStream
+            val id = input.read()
+            if (id in fdArray.indices && fdArray[id] != null) {
+              client.setFileDescriptorsForSend(arrayOf(fdArray[id]!!))
+              output.write(1)
             }
-          } finally {
-            server.close()
           }
         }
+      } finally {
+        server.close()
+      }
+    }
         .onFailure {
           Log.e(TAG, "Dex2oat wrapper daemon crashed", it)
           if (compatibility == DEX2OAT_OK) {
