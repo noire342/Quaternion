@@ -45,5 +45,7 @@ subprocess.run([str(manager), f'--sdk_root={sdk}', '--licenses'],
                input='y\n' * 200, text=True, check=True)
 required = ['platforms;android-37.0', 'build-tools;37.0.0', 'ndk;30.0.16248370', 'cmake;4.1.2']
 subprocess.run([str(manager), f'--sdk_root={sdk}', *required], check=True)
+for package in required:
+    assert (sdk / package.replace(';', '/')).is_dir(), f'SDK package missing: {package}'
 (root / 'sdk-manifest.json').write_text(json.dumps({
     'commandline_url': url, algorithm: actual, 'packages': required}, indent=2))

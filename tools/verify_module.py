@@ -34,6 +34,11 @@ with zipfile.ZipFile(archive) as z:
     results = []
     with tempfile.TemporaryDirectory(prefix='vector-installer-') as tmp:
         root = Path(tmp)
+        # The KernelSU installer uses BusyBox sha256sum's -s option. GNU
+        # coreutils does not implement that option; use the real target applet.
+        applets = root / 'applets'
+        applets.mkdir()
+        (applets / 'sha256sum').symlink_to('/bin/busybox')
         for arch, abi32, abi64, is64 in [('arm', 'armeabi-v7a', 'arm64-v8a', False),
                                        ('arm64', 'armeabi-v7a', 'arm64-v8a', True),
                                        ('x86', 'x86', 'x86_64', False),
@@ -59,7 +64,8 @@ set_perm_recursive() {
 set_perm() { chmod "$4" "$1"; }
 ''' + source)
             env = dict(os.environ, ARCH=arch, API='37', IS64BIT=str(is64).lower(),
-                       MODPATH=str(module), TMPDIR=str(installer_tmp), ZIPFILE=str(archive))
+                       MODPATH=str(module), TMPDIR=str(installer_tmp), ZIPFILE=str(archive),
+                       PATH=str(applets) + ':' + os.environ['PATH'])
             result = subprocess.run(['/bin/dash', str(script)], env=env, capture_output=True, text=True, timeout=30)
             assert result.returncode == 0, result.stdout + result.stderr
             for name in required:

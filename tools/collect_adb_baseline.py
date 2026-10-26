@@ -35,6 +35,12 @@ online = [line.split()[0] for line in devices['stdout'].splitlines()
 serial = args.serial
 if serial is None:
     if len(online) != 1:
+        (args.output / 'summary.json').write_text(json.dumps({
+            'utc': datetime.now(timezone.utc).isoformat(),
+            'status': 'no-authorized-device' if not online else 'multiple-devices-select-serial',
+            'root_available': None, 'device_mutations': False,
+            'install_performed': False, 'soft_reboot_performed': False,
+        }, indent=2), encoding='utf-8')
         raise SystemExit('Expected exactly one authorized device; no device modified. See devices.json.')
     serial = online[0]
 if serial not in online:

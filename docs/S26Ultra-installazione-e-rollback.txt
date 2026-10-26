@@ -1,0 +1,85 @@
+Vector S26 Ultra Experimental Debug - installazione manuale e rollback
+
+Stato: build sperimentale. La compatibilita reale su SM-S948B / Android 17,
+KernelSU LKM temporaneo 32705 e NeoZygisk 289 richiede una prova sul telefono.
+I test Linux non provano la stabilita del riavvio emulato Samsung.
+
+Prima dell'installazione
+1. Conservare ZIP, SHA256SUMS.txt e report di questa build sul PC.
+2. Confermare modello, root disponibile, SELinux Enforcing e moduli presenti.
+3. Salvare separatamente le configurazioni Vector eventualmente esistenti:
+   /data/adb/lspd e /data/adb/modules/zygisk_vector (se presenti).
+   Preservare /data/adb/lspd.vector-backup; non ripristinarlo automaticamente.
+   Il percorso /data/adb/lspd e storico e puo essere condiviso con LSPosed:
+   verificarne la provenienza prima di qualunque spostamento o cancellazione.
+4. Confermare che le opzioni RMGU di cancellazione/reset automatico dei moduli
+   siano disattivate. Non cambiare gli hook composer per questa prova.
+5. Conservare la misura Play Integrity effettuata con il proprio verificatore.
+   Non dedurre MEETS_STRONG_INTEGRITY o MEETS_DEVICE_INTEGRITY da ADB.
+
+Installazione
+Usare il gestore KernelSU del telefono: Moduli -> Installa da archivio,
+selezionando Vector-S26Ultra-Experimental-Debug.zip.
+L'ID del modulo resta zygisk_vector. Il manager APK e contenuto nel modulo.
+L'installer verifica gli hash interni e rifiuta un LSPosed concorrente attivo,
+senza disabilitare automaticamente quel modulo.
+Non avviare alcun Soft reboot come parte dell'installazione.
+
+Alternativa ADB, solo se scelta esplicitamente dall'operatore:
+  adb devices -l
+  adb -s SERIALE shell su -c id
+  adb -s SERIALE shell su -c "/data/adb/ksud module --help"
+Solo se l'help della versione installata elenca effettivamente install:
+  adb -s SERIALE push Vector-S26Ultra-Experimental-Debug.zip /data/local/tmp/
+  adb -s SERIALE shell su -c "/data/adb/ksud module install /data/local/tmp/Vector-S26Ultra-Experimental-Debug.zip"
+Questi comandi sono istruzioni; non sono eseguiti dalla preparazione della build.
+Il comando supportato deve essere confermato sulla versione di ksud in uso.
+
+Eventuale prova successiva, separata dall'installazione
+Il dispositivo ha gia mostrato riavvii Rescue Party anche senza moduli.
+Questa patch non corregge dimostratamente quel problema Samsung/KernelSU.
+Non considerare un'attesa di dieci minuti una correzione.
+Prima di decidere una singola prova, raccogliere baseline, predisporre recupero
+e salvare i log sul PC. Non predisporre cicli automatici o ulteriori tentativi.
+Usare esclusivamente il percorso RMGU/KernelSU verificato per questa versione.
+Non confondere il riavvio del solo zygote dal menu Vector con ksud soft-reboot.
+Nessun comando di riavvio e incluso nei tool automatici di questa consegna.
+
+Criteri di riuscita
+Root e NeoZygisk disponibili; un solo daemon Vector; compilatori originali
+distinti dai wrapper; mount coerenti; manager raggiungibile; framework attivo;
+un hook innocuo in una app di test autorizzata; nessun crash system_server o
+Rescue Party. La sola presenza di vectord non dimostra il funzionamento.
+Ricontrollare separatamente Play Integrity con lo stesso verificatore iniziale.
+Alla prima perdita ADB, instabilita, mancata iniezione o Rescue Party: fermarsi.
+
+Rollback selettivo
+Se il telefono e stabile e il root disponibile, disabilitare solo Vector nel
+gestore KernelSU. In alternativa, dopo aver verificato che module.prop contenga
+esattamente id=zygisk_vector, creare il solo marker disable nel suo percorso:
+  /data/adb/modules/zygisk_vector/disable
+Se esiste una copia in attesa, verificare il suo module.prop e creare anche:
+  /data/adb/modules_update/zygisk_vector/disable
+Non creare directory inesistenti e non modificare altri moduli.
+Il marker impedisce i successivi avvii del modulo: non scarica gli hook gia
+iniettati nei processi. La rimozione dal gestore segue la stessa distinzione.
+Una pulizia runtime o un riavvio del framework richiedono una decisione separata.
+
+Se ADB o root non sono disponibili, non tentare cancellazioni indiscriminate.
+Con root on boot disattivato, un riavvio completo normalmente elimina il root
+temporaneo: e una misura di recupero manuale che perde il root, non un tentativo
+da ripetere automaticamente. Dopo un riavvio reale fermarsi e ricontrollare.
+Non rilanciare DirtyFrag, non reinstallare moduli e non ripetere Soft reboot
+automaticamente. Nessun flash Odin, sblocco bootloader o modifica di partizioni.
+Preservare KernelSU, RMGU, NeoZygisk, composer e il backup Vector isolato.
+
+Limiti della patch
+La pulizia opera nel mount namespace di init e rifiuta chiamanti esterni.
+Rimuove solo mount visibili riconducibili ai wrapper del proprio modulo.
+Un mount estraneo sovrapposto e conservato, anche se nasconde un vecchio layer
+Vector. File descriptor gia aperti e namespace di altri processi non vengono
+forzatamente alterati. Questo non e un ripristino universale di tutti i mount.
+Il post-fs-data permette di pulire prima del nuovo zygote; service ricontrolla
+prima del daemon, ma non introduce una garanzia sull'ordine dei servizi Samsung.
+Non aggiunge occultamento root, spoofing, bypass di attestazione o cambi SELinux.
+Non garantisce la conservazione di Strong Integrity prima di una misura reale.
