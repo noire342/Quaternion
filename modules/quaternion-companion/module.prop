@@ -1,0 +1,6 @@
+id=quaternion_companion
+name=Quaternion Companion
+version=0.1.0-experimental
+versionCode=1
+author=Loren & Codex
+description=Controlli locali, gestione reversibile del debug ADB e accesso a HMA-OSS. Nessuna modifica automatica; non sostituisce le funzioni mancanti del kernel.

@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="dark light"><title>Quaternion Companion</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body><main><header><span class="symbol" aria-hidden="true">Q</span><div><h1>Quaternion</h1><p>Companion · sperimentale 0.1.0</p></div></header>
+<section><h2>Stato del telefono</h2><pre id="state" aria-live="polite">Lettura in corso…</pre><button data-action="status">Aggiorna</button></section>
+<section><h2>Debug ADB</h2><p>Disattiva davvero il debug USB e wireless. Le connessioni ADB possono interrompersi; opera da questa pagina sul telefono.</p><div class="actions"><button data-action="disable-adb">Disattiva debug ADB</button><button data-action="restore-adb" class="secondary">Ripristina ADB</button></div><p class="note">Ripristina prima di disabilitare il modulo o perdere il root temporaneo.</p></section>
+<section><h2>Visibilità delle app</h2><p>HMA-OSS è già installato. Configuralo per le app desiderate, scegliendo quali pacchetti escludere. Verifica il risultato con una nuova scansione.</p><button data-action="hma" class="secondary">Apri HMA-OSS</button></section>
+<aside><strong>Il limite attuale</strong><p>Il tuo ksud non riconosce mount_hide. Questo modulo non può aggiungere una funzione al kernel. SELinux resta Enforcing; i risultati di integrità richiedono una verifica separata.</p></aside>
+<p id="feedback" role="status" aria-live="polite"></p></main></body></html>

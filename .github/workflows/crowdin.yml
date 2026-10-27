@@ -20,6 +20,8 @@ on:
 
 jobs:
   synchronize-with-crowdin:
+    # Fork strings must never be uploaded into the upstream translation project.
+    if: ${{ github.repository == 'JingMatrix/Vector' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout

@@ -38,8 +38,12 @@ removes its protection against AOT inlining and can break hooks.
 The upstream kernel solution is JingMatrix/KernelSU commit
 `80a3ab3` (`mount_hide`). A script module can use that capability only if the loaded
 kernel implementation actually supplies it; a version number or a manager update
-does not establish support. Quaternion Companion reports unsupported/unknown
-capabilities instead of pretending to install a kernel feature.
+does not establish support. On the current device both read-only commands
+`ksud feature check mount_hide` and `ksud feature get mount_hide` returned
+`Error: Unknown feature: mount_hide`. This proves the installed CLI does not
+expose it; it does not independently enumerate the loaded kernel's internals.
+Quaternion Companion reports that limitation instead of pretending to install
+a kernel feature.
 
 **Canary 3114 does not fix this mount exposure by itself.** Renaming the module,
 changing proc output inside the detector, or disabling the compiler interception
