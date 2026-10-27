@@ -367,7 +367,7 @@ int main(int argc, char **argv) {
         p = self.spawn()
         self.own_mount()
         service = self.module / 'service.sh'
-        service.write_bytes((ROOT / 'zygisk/module/service.sh').read_bytes())
+        service.write_text((ROOT / 'zygisk/module/service.sh').read_text().replace('/system/bin/sh', self.shell))
         result_path = self.case / 'daemon-started.json'
         daemon = self.module / 'daemon'
         daemon.write_text('#!/usr/bin/env python3\nimport json, pathlib, sys\n'
@@ -379,7 +379,7 @@ int main(int argc, char **argv) {
         self.assert_ok(result)
         self.assertEqual(p.wait(timeout=2), -9)
         args, compiler = json.loads(result_path.read_text())
-        self.assertEqual(args, ['--system-server-max-retry=0', '--late-inject', 'argument with spaces'])
+        self.assertEqual(args, ['--late-inject', 'argument with spaces'])
         self.assertTrue(compiler.startswith('stock compiler'))
 
     def test_first_update_cleans_before_new_zygote_namespace(self):

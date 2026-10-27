@@ -1,7 +1,6 @@
 id=zygisk_vector
-name=Vector
+name=Quaternion
 version=${versionName} (${versionCode}-${versionHash})
 versionCode=${versionCode}
-author=JingMatrix
-description=A modern, Xposed-compatible framework for Android application hooking. (Android 8.1 ~ 17)
-updateJson=https://raw.githubusercontent.com/JingMatrix/Vector/master/zygisk/update.json
+author=Loren & Codex; upstream JingMatrix and Vector contributors
+description=Experimental Vector fork based on canary 3114, with temporary-root lifecycle guards. Android 8.1 ~ 17. Module ID retained for in-place upgrades.

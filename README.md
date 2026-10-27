@@ -119,3 +119,11 @@ This project is made possible by the following open-source contributions:
 ### License
 
 Vector is licensed under the [GNU General Public License v3](http://www.gnu.org/copyleft/gpl.html).
+# Quaternion — experimental Vector fork
+
+This fork builds on Vector canary 3114 and keeps the existing module ID for
+in-place upgrades. See [the fork notes](docs/QUATERNION.md) for changes,
+limitations and the Android 17 mount-exposure investigation.
+
+Original project and contributor credits follow below.
+
